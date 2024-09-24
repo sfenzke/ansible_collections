@@ -2,31 +2,49 @@
 
 # Copyright: (c) 2018, Terry Jones <terry.jones@example.org>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 DOCUMENTATION = r'''
 ---
-module: pihole
+module: customdns
 
-short_description: This is a module to control apiholeinstallation
+short_description: This is a module to configure customdns of a pihole installation.
 
 # If this is part of a collection, you need to use semantic versioning,
 # i.e. the version is of the form "2.5.0" and not "2.4".
 version_added: "1.0.0"
 
-description: 
-    Thismoduleis intended to controla pihole installation.
+description:
+    This moduleconfigures customdns entrie of a pihole installation.
 
 options:
-    name:
-        description: This is the message to send to the test module.
+    api_key:
+        description:
+            The api key to authenticate against the pihole server.
+            Can also be set via PIHOLE_API_KEY environmaent variable
         required: true
         type: str
-    new:
+    url:
         description:
-            - Control to demo if the result of this module is changed or not.
-            - Parameter description can be a list as well.
+            URL the pihole server is listening on.
+            Can also be give via PIHOLE_URL Eenvironment variable.
+        required: true
+        type: str
+    domain:
+        description:
+            domain to add
+        required: true
+        type: str
+    ip:
+        description:
+            IP to add
+        required: true
+        type: str
+    reload:
+        description:
+            Whether the DNS Service should be reloadedafterthechanges have been applied.
         required: false
         type: bool
 # Specify this value according to your collection
@@ -35,96 +53,131 @@ options:
 #     - my_namespace.my_collection.my_doc_fragment_name
 
 author:
-    - Your Name (@yourGitHubHandle)
+    - Stefan Fenzke (@sfenzke)
 '''
 
 EXAMPLES = r'''
-# Pass in a message
-- name: Test with a message
-  my_namespace.my_collection.my_test:
-    name: hello world
-
-# pass in a message and have changed true
-- name: Test with a message and changed output
-  my_namespace.my_collection.my_test:
-    name: hello world
-    new: true
-
-# fail the module
-- name: Test failure of the module
-  my_namespace.my_collection.my_test:
-    name: fail me
+# creatte a newentr
+- name: Create new customdnsentr
+  sfenzke.pihole_api.customdns:
+    url: http://example.org
+    ip: 192.168.0.1
+    state: present
 '''
 
 RETURN = r'''
 # These are examples of possible return values, and in general should use other names for return values.
-original_message:
-    description: The original name param that was passed in.
+api_url:
+    description: The given api_url.
     type: str
     returned: always
-    sample: 'hello world'
-message:
-    description: The output message that the test module generates.
-    type: str
-    returned: always
-    sample: 'goodbye'
+    sample: 'http://example.org'
 '''
 
 from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils.common.parameters import env_fallback
+
+import requests
+
+params = {}
+api_url = ''
+
+
+def build_params_string(params):
+    return '&'.join([k if v is None else f'{k}={v}' for k, v in params.item()])
+
+
+def is_present(domain, ip):
+    local_params = params.copy()
+
+    local_params['action'] = 'get'
+
+    custom_dns_entries = [(item[0], item[1]) for item in requests.get(api_url, build_params_string(local_params)).json()['data']]
+
+    return (domain, ip) in custom_dns_entries
+
+
+""" Execute the command.
+
+    Parameters:
+    domain: the domain to add
+    ip: the ip to add
+    reload: whether the DNS service should be reoalded afterthe update
+    check_mode: whether the module is running in check mode. defaults to False
+
+    Returns:
+    bool: False if no change has been mad otherwise True
+"""
+
+
+def execute_request(domain, ip, reload, check_mode=False):
+    if (is_present(domain, ip) and params['action'] == 'add') or (not is_present(domain, ip) and params['action'] == 'delete'):
+        return False
+
+    local_params = params.copy()
+    local_params['ip'] = ip
+    local_params['domain'] = domain
+    local_params['reload'] = reload
+
+    if not check_mode:
+        requests.get(api_url, build_params_string(local_params))
+
+    return True
 
 
 def run_module():
     # define available arguments/parameters a user can pass to the module
-    module_args = dict(
-        api_key = dict(type='str', required=True),
-        url     = dict(type='str', required=True),
-        ip      = dict(type='str', required=False),
-        domain  = dict(type='str', required=False),
+    module_args = {
+        'api_key': {
+            'type': 'str',
+            'required': True,
+            'fallback': (env_fallback, 'PIHOLE_API_KEY')},
+        'url': {
+            'type': 'str',
+            'required': True,
+            'fallback': (env_fallback, 'PIHOLE_URL')},
+        'ip': {
+            'type': 'str',
+            'required': True},
+        'domain': {
+            'type': 'str',
+            'required': True},
+        'reload': {
+            'type': 'bool',
+            'required': 'false',
+            'default': True},
+        'state': {
+            'type': 'str',
+            'required': False,
+            'default': 'present',
+            'choices': ['present', 'absent']},
+    }
 
-    )
-
-    # seed the result dict in the object
-    # we primarily care about changed and state
-    # changed is if this module effectively modified the target
-    # state will include any data that you want your module to pass back
-    # for consumption, for example, in a subsequent task
-    result = dict(
-        changed=False,
-    )
-
-    # the AnsibleModule object will be our abstraction working with Ansible
-    # this includes instantiation, a couple of common attr would be the
-    # args/params passed to the execution, as well as if the module
-    # supports check mode
     module = AnsibleModule(
         argument_spec=module_args,
         supports_check_mode=True
     )
 
-    # if the user is working with this module in only check mode we do not
-    # want to make any changes to the environment, just return the current
-    # state with no modifications
-    if module.check_mode:
-        module.exit_json(**result)
+    api_url = f'{module.params["url"]}/admin/api'
 
-    # manipulate or modify the state as needed (this is going to be the
-    # part where your module will do what it needs to do)
-    result['original_message'] = module.params['name']
-    result['message'] = 'goodbye'
+    params['auth'] = module.params['api_key']
+    params['customdns'] = None
 
-    # use whatever logic you need to determine whether or not this module
-    # made any modifications to your target
-    if module.params['new']:
-        result['changed'] = True
+    if module.params['state'] == 'present':
+        params['action'] = "add"
+    else:
+        params['action'] = 'delete'
 
-    # during the execution of the module, if there is an exception or a
-    # conditional state that effectively causes a failure, run
-    # AnsibleModule.fail_json() to pass in the message and the result
-    if module.params['name'] == 'fail me':
-        module.fail_json(msg='You requested this to fail', **result)
+    changed = execute_request(module.params['domain'],
+                              module.params['ip'],
+                              module.params['reload'],
+                              module.check_mode)
 
-    # in the event of a successful module execution, you will want to
-    # simple AnsibleModule.exit_json(), passing the key/value results
+    result = dict(
+        changed=changed,
+        api_url=api_url
+    )
+
     module.exit_json(**result)
 
 
