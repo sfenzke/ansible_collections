@@ -78,13 +78,16 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.common.parameters import env_fallback
 
 import requests
+""" import epdb
+
+epdb.serve() """
 
 params = {}
 api_url = ''
 
 
 def build_params_string(params):
-    return '&'.join([k if v is None else f'{k}={v}' for k, v in params.item()])
+    return '&'.join([k if v is None else f'{k}={v}' for k, v in params.items()])
 
 
 def is_present(domain, ip):
@@ -126,6 +129,9 @@ def execute_request(domain, ip, reload, check_mode=False):
 
 
 def run_module():
+    global api_url
+    global params
+
     # define available arguments/parameters a user can pass to the module
     module_args = {
         'api_key': {
@@ -156,7 +162,7 @@ def run_module():
         supports_check_mode=True
     )
 
-    api_url = f'{module.params["url"]}/admin/api'
+    api_url = f'{module.params["url"]}/admin/api.php'
 
     params['auth'] = module.params['api_key']
     params['customdns'] = None
