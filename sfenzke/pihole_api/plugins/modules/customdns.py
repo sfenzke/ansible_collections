@@ -144,11 +144,9 @@ def run_module():
             'required': True},
         'reload': {
             'type': 'bool',
-            'required': 'false',
             'default': True},
         'state': {
             'type': 'str',
-            'required': False,
             'default': 'present',
             'choices': ['present', 'absent']},
     }
