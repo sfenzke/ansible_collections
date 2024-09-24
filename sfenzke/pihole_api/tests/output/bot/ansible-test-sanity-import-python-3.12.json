@@ -1,0 +1,10 @@
+{
+    "docs": "https://docs.ansible.com/ansible-core/2.17/dev_guide/testing/sanity/import.html", 
+    "results": [
+        {
+            "message": "The test `ansible-test sanity --test import --python 3.12` [[explain](https://docs.ansible.com/ansible-core/2.17/dev_guide/testing/sanity/import.html)] failed with 1 error:", 
+            "output": "plugins/modules/customdns.py:0:0: traceback: ValueError: collection metadata was not loaded for collection sfenzke.pihole_api"
+        }
+    ], 
+    "verified": false
+}

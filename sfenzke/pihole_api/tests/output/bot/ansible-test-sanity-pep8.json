@@ -1,0 +1,10 @@
+{
+    "docs": "https://docs.ansible.com/ansible-core/2.17/dev_guide/testing/sanity/pep8.html", 
+    "results": [
+        {
+            "message": "The test `ansible-test sanity --test pep8` [[explain](https://docs.ansible.com/ansible-core/2.17/dev_guide/testing/sanity/pep8.html)] failed with 13 errors:", 
+            "output": "plugins/modules/customdns.py:18:13: W291: trailing whitespace\nplugins/modules/customdns.py:79:16: E251: unexpected spaces around keyword / parameter equals\nplugins/modules/customdns.py:79:18: E251: unexpected spaces around keyword / parameter equals\nplugins/modules/customdns.py:80:12: E221: multiple spaces before operator\nplugins/modules/customdns.py:80:12: E251: unexpected spaces around keyword / parameter equals\nplugins/modules/customdns.py:80:18: E251: unexpected spaces around keyword / parameter equals\nplugins/modules/customdns.py:81:11: E221: multiple spaces before operator\nplugins/modules/customdns.py:81:11: E251: unexpected spaces around keyword / parameter equals\nplugins/modules/customdns.py:81:18: E251: unexpected spaces around keyword / parameter equals\nplugins/modules/customdns.py:82:15: E221: multiple spaces before operator\nplugins/modules/customdns.py:82:15: E251: unexpected spaces around keyword / parameter equals\nplugins/modules/customdns.py:82:18: E251: unexpected spaces around keyword / parameter equals\nplugins/modules/customdns.py:136:11: W292: no newline at end of file"
+        }
+    ], 
+    "verified": false
+}
