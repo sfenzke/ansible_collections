@@ -1,0 +1,1 @@
+This repository contains the ansible collections developed by me.Maybein the future I will split it out in deifferent repositories but for nowthis will do.
